@@ -41,19 +41,24 @@ io.on('connection', (socket) => {
 });
 
 // Database connection
-// (In a real scenario with MongoDB URI from .env)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/logisense';
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
+
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  return mongoose.connect(MONGODB_URI);
+};
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  connectDB().then(() => {
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    // If mongo is not available, just run the server anyway for the demo
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} (without DB)`);
-    });
+  }).catch(err => {
+    console.error('DB error:', err);
+    server.listen(PORT, () => console.log(`Server on ${PORT} (no DB)`));
   });
+}
+
+// Export for Vercel
+module.exports = app;
